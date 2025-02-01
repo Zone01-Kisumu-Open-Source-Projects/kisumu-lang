@@ -47,6 +47,42 @@ Explore working examples:
 - [Concurrency](examples/concurrency_example.ksm)
 - [Modules](examples/modules_example.ksm) -->
 
+### **Development and Testing**
+
+#### **Running Unit Tests**
+
+To ensure code quality and maintain reliability, Kisumu uses Go's built-in testing framework. Here's how to run the tests locally:
+
+1. **Run All Tests**
+   ```bash
+   make test
+   ```
+   This command executes all unit tests in the project.
+
+2. **Run Tests with Coverage**
+   ```bash
+   make coverage
+   ```
+   This generates a coverage report and displays the coverage statistics for each package.
+
+3. **Run Tests for Specific Package**
+   ```bash
+   go test ./path/to/package
+   ```
+   Replace `path/to/package` with the package you want to test.
+
+4. **Run Tests with Verbose Output**
+   ```bash
+   go test -v ./...
+   ```
+   This shows detailed test output including individual test cases.
+
+For development, we recommend running the complete test suite before submitting any changes:
+```bash
+make pre-commit
+```
+This command runs tests along with code formatting and linting checks.
+
 ### **Contributing to Kisumu**
 
 We welcome contributions to make Kisumu even better!  
