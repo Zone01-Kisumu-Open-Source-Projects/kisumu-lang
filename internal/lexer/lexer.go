@@ -106,22 +106,6 @@ func (l *Lexer) skipWhiteSpace() {
 	}
 }
 
-// readString reads a string literal, supporting multiple delimiters
-func (l *Lexer) readString() string {
-	startDelimiter := l.char
-	position := l.position + 1
-	for {
-		l.readCurrentCharacter()
-		if l.char == startDelimiter {
-			break
-		}
-		if l.char == 0 {
-			return token.UnterminatedString
-		}
-	}
-	return l.input[position:l.position]
-}
-
 // readIdentifier reads an identifier or keyword
 func (l *Lexer) readIdentifier() string {
 	position := l.position
@@ -132,16 +116,28 @@ func (l *Lexer) readIdentifier() string {
 }
 
 // readNumber reads a number literal, supporting integers and floats
-func (l *Lexer) readNumber() string {
-	position := l.position
-	isFloat := false
-	for isDigit(l.char) || (l.char == '.' && !isFloat) {
-		if l.char == '.' {
-			isFloat = true
-		}
+func (l *Lexer) readNumber() (string, string) {
+	start := l.position
+	var tokenType string
+
+	for isDigit(l.char) {
 		l.readCurrentCharacter()
 	}
-	return l.input[position:l.position]
+
+	// Check if it's a float (has a dot)
+	if l.char == '.' {
+		l.readCurrentCharacter()
+
+		for isDigit(l.char) {
+			l.readCurrentCharacter()
+		}
+		tokenType = token.FLOAT
+	} else {
+		// If no dot, it's an integer
+		tokenType = token.INT
+	}
+
+	return l.input[start:l.position], tokenType
 }
 
 // newToken creates a new token with the given type and literal
@@ -155,30 +151,70 @@ func (l *Lexer) NextToken() token.Token {
 
 	l.skipWhiteSpace()
 
-	// Handle single-character tokens
-	if tokType, ok := singleCharTokens[l.char]; ok {
-		tok = newToken(tokType, string(l.char))
-		l.readCurrentCharacter()
-		return tok
-	}
-
 	switch l.char {
 	case '=':
 		tok = l.matchTwoCharToken('=', token.ASSIGN, token.EQUAL)
 	case '!':
 		tok = l.matchTwoCharToken('=', token.NOT, token.NOTEQUAL)
+	case '<':
+		tok = l.matchTwoCharToken('=', token.LESSTHAN, token.LESSEQUAL)
+	case '>':
+		tok = l.matchTwoCharToken('=', token.GREATERTHAN, token.GREATEREQUAL)
+	case '&':
+		if l.peekNextCharacter() == '&' {
+			l.readCurrentCharacter()
+			tok = newToken(token.AND, "&&")
+		} else {
+			tok = newToken(token.ILLEGAL, string(l.char))
+		}
+	case '|':
+		if l.peekNextCharacter() == '|' {
+			l.readCurrentCharacter()
+			tok = newToken(token.OR, "||")
+		} else {
+			tok = newToken(token.ILLEGAL, string(l.char))
+		}
 	case '"', '\'':
 		if contains(l.config.StringDelimiters, l.char) {
-			tok.Type = token.STRING
-			tok.Literal = l.readString()
+			startDelimiter := l.char
+			l.readCurrentCharacter()
+			position := l.position
 
-			// Check for unterminated string
-			if tok.Literal == "unterminated string" {
+			for l.char != startDelimiter && l.char != 0 {
+				l.readCurrentCharacter()
+			}
+
+			if l.char == 0 {
 				tok.Type = token.ILLEGAL
 				tok.Literal = "unterminated string"
+			} else {
+				tok.Type = token.STRING
+				tok.Literal = l.input[position:l.position]
+			}
+			if l.char != 0 {
+				l.readCurrentCharacter()
 			}
 			return tok
 		}
+		tok = newToken(token.ILLEGAL, string(l.char))
+	case '.':
+		if isDigit(l.peekNextCharacter()) {
+			position := l.position
+			l.readCurrentCharacter() // Consume the '.'
+
+			// Ensures at least one digit follows the dot
+			if !isDigit(l.char) {
+				tok = newToken(token.ILLEGAL, ".")
+			} else {
+				for isDigit(l.char) {
+					l.readCurrentCharacter()
+				}
+				tok = newToken(token.FLOAT, l.input[position:l.position])
+			}
+		} else {
+			tok = newToken(token.ILLEGAL, ".")
+		}
+
 	case 0:
 		tok.Type = token.EOF
 		tok.Literal = ""
@@ -188,12 +224,14 @@ func (l *Lexer) NextToken() token.Token {
 			tok.Type = token.LookupIdentifier(tok.Literal)
 			return tok
 		} else if isDigit(l.char) {
-			tok.Type = token.INT
-			tok.Literal = l.readNumber()
+			tok.Literal, tok.Type = l.readNumber()
 			return tok
+		} else if tokType, ok := singleCharTokens[l.char]; ok {
+			tok = newToken(tokType, string(l.char))
 		} else {
 			tok = newToken(token.ILLEGAL, string(l.char))
 		}
+
 	}
 
 	l.readCurrentCharacter()
@@ -235,8 +273,6 @@ var singleCharTokens = map[byte]string{
 	'-': token.MINUS,
 	'*': token.ASTERISK,
 	'/': token.SLASH,
-	'<': token.LESSTHAN,
-	'>': token.GREATERTHAN,
 	',': token.COMMA,
 	';': token.SEMICOLON,
 	'(': token.LEFTPARENTHESIS,
@@ -245,4 +281,9 @@ var singleCharTokens = map[byte]string{
 	'}': token.RIGHTBRACE,
 	'[': token.LEFTBRACKET,
 	']': token.RIGHTBRACKET,
+	'%': token.MODULO,
+	'^': token.POWER,
+	'&': token.BITAND,
+	'|': token.BITOR,
+	'~': token.BITNOT,
 }

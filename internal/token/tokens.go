@@ -11,6 +11,7 @@ const (
 	EOF     = "EOF"
 
 	IDENTIFIER         = "IDENTIFIER"
+	FLOAT              = "FLOAT"
 	INT                = "INT"
 	STRING             = "STRING"
 	BOOL               = "BOOL"
@@ -22,13 +23,26 @@ const (
 	MINUS    = "MINUS"
 	ASTERISK = "ASTERISK"
 	SLASH    = "SLASH"
+	MODULO   = "MODULO"
+	POWER    = "POWER"
+
+	// Bitwise operators
+	BITAND = "BITAND"
+	BITOR  = "BITOR"
+	BITNOT = "BITNOT"
+
+	// Logical operators
+	AND = "AND"
+	OR  = "OR"
 
 	// Comparisons token
-	LESSTHAN    = "LESSTHAN"
-	GREATERTHAN = "GREATERTHAN"
-	EQUAL       = "EQUAL"
-	NOT         = "NOT"
-	NOTEQUAL    = "NOTEQUAL"
+	LESSTHAN     = "LESSTHAN"
+	GREATERTHAN  = "GREATERTHAN"
+	LESSEQUAL    = "LESSEQUAL"
+	GREATEREQUAL = "GREATEREQUAL"
+	EQUAL        = "EQUAL"
+	NOT          = "NOT"
+	NOTEQUAL     = "NOTEQUAL"
 
 	COMMA     = "COMMA"
 	SEMICOLON = "SEMICOLON"
