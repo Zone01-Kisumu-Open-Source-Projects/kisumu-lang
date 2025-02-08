@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	fmt.Println("Kisumu Lang CLI")
+	fmt.Printf("\n\n\tkisumu-lang CLI\n\n")
 }
