@@ -17,7 +17,7 @@ func InitLogger(path string, level slog.Level) error {
 		return errors.New("path to log cannot be empty")
 	}
 
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0400)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o744)
 	if err != nil {
 		return fmt.Errorf("failed openning log file: %w", err)
 	}
