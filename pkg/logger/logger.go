@@ -48,7 +48,7 @@ func Info(msg string, args ...slog.Attr) {
 	Logger.Info(msg, argSlice...)
 }
 
-// Info attributes its logs with the ERROR tag.
+// Error attributes its logs with the ERROR tag.
 func Error(msg string, args ...slog.Attr) {
 	if Logger == nil {
 		log.Printf("Logger not initialized: %s\n", msg)
@@ -62,7 +62,7 @@ func Error(msg string, args ...slog.Attr) {
 	Logger.Error(msg, argSlice...)
 }
 
-// Info attributes its logs with the WARN tag.
+// Warn attributes its logs with the WARN tag.
 func Warn(msg string, args ...slog.Attr) {
 	if Logger == nil {
 		log.Printf("Logger not initialized: %s\n", msg)
@@ -74,4 +74,18 @@ func Warn(msg string, args ...slog.Attr) {
 		argSlice = append(argSlice, arg.Key, arg.Value)
 	}
 	Logger.Warn(msg, argSlice...)
+}
+
+// Debug attributes its logs with the DEBUG tag.
+func Debug(msg string, args ...slog.Attr) {
+	if Logger == nil {
+		log.Printf("Logger not initialized: %s\n", msg)
+	}
+
+	argSlice := make([]any, 0)
+
+	for _, arg := range args {
+		argSlice = append(argSlice, arg.Key, arg.Value)
+	}
+	Logger.Debug(msg, argSlice...)
 }
