@@ -17,16 +17,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - ubuntu
-          - macOS
-          - windows
-        go:
-          - 21
-          - 22
-          - 23
-    runs-on: ${{ matrix.platform }}-latest
-    name: Build and Test on ${{ matrix.platform }} with Go 1.${{ matrix.go }}.x
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: ['1.21', '1.22', '1.23']
+    runs-on: ${{ matrix.platform }}
+    name: Build and Test on ${{ matrix.platform }} with Go ${{ matrix.go-version }}
 
     steps:
       - name: Checkout code
@@ -34,80 +28,89 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Cache Go modules
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ matrix.go }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-${{ matrix.go }}-
+      - name: Debug environment
+        run: |
+          echo "Running on ${{ runner.os }}"
+          echo "Job matrix:"
+          echo "Platform: ${{ matrix.platform }}"
+          echo "Go: ${{ matrix.go-version }}"
 
-      - name: Set up Go environment
+      - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.${{ matrix.go }}.x
+          go-version: ${{ matrix.go-version }}
+          check-latest: true
 
-      - name: Install dependencies
-        run: go mod tidy
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.go-version }}-
 
-      - name: Check formatting
+      - name: Install tools
         run: |
-          gofmt -l . | tee fmt.log
-          if [ -s fmt.log ]; then
-            echo "Code is not formatted. Please run 'gofmt -w -l -s .'"
+          go install golang.org/x/tools/cmd/godoc@latest
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Format check
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Unformatted files:"
+            echo "$unformatted"
             exit 1
           fi
 
-      - name: Lint code
+      - name: Run linters
         uses: golangci/golangci-lint-action@v6.1.1
         with:
-          args: "--timeout=5m"
+          version: latest
+          args: --timeout=5m --enable=gosec --enable=staticcheck
 
-      - name: Run static analysis
-        run: |
-          go vet ./...
-          staticcheck ./...
+      - name: Build
+        run: make build
 
-      - name: Build binaries
+      - name: Run tests
         run: |
-          make build
-
-      - name: Run unit tests
-        run: |
-          go test -v ./... | tee tests.log
-        continue-on-error: true
-
-      - name: Generate Coverage Report
-        run: |
-          go test -coverprofile=coverage.out ./...
+          go test -v -coverprofile=coverage.out -covermode=atomic ./... | tee tests.log
           go tool cover -func=coverage.out
-        continue-on-error: false
 
-      - name: Upload Coverage Report
+      - name: Upload coverage
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: coverage-report
+          name: coverage-${{ matrix.platform }}-go${{ matrix.go-version }}
           path: coverage.out
 
-      - name: Upload Test Results
+      - name: Upload test results
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: test-results
+          name: test-results-${{ matrix.platform }}-go${{ matrix.go-version }}
           path: tests.log
 
-      - name: Notify on failure
-        if: failure()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: "🚨 CI/CD pipeline failed! Please check the logs."
-            })
-      - name: Generate documentation
+      - name: Generate docs (non-Windows)
+        if: matrix.platform != 'windows-latest'
         run: |
           godoc -http=:6060 &
           sleep 5
           curl -s http://localhost:6060/pkg/ > docs.log
+          cat docs.log
+
+      - name: Notify failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "❌ Pipeline failed on ${{ matrix.platform }} with Go ${{ matrix.go-version }}\n\n" +
+                    "View the [run details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            })
