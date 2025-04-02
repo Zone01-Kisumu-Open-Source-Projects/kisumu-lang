@@ -1,91 +1,76 @@
 package logger
 
 import (
-	"errors"
-	"fmt"
+	"context"
 	"io"
-	"log"
 	"log/slog"
 	"os"
+	"sync"
 )
 
-var Logger *slog.Logger
+var (
+	instance *slog.Logger
+	initOnce sync.Once
+	mu       sync.RWMutex
+)
 
-// InitLogger relies on the slog package to provide a custom logger with more information on encountered errors logged to both standard output and log file.
-func InitLogger(path string, level slog.Level) error {
-	if path == "" {
-		return errors.New("path to log cannot be empty")
-	}
-
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o744)
-	if err != nil {
-		return fmt.Errorf("failed openning log file: %w", err)
-	}
-
-	// Duplicate logs encountered to both standard output and a file
-	multiWriter := io.MultiWriter(os.Stdout, file)
-	Logger = slog.New(slog.NewTextHandler(multiWriter, &slog.HandlerOptions{
-		Level: level,
-	}))
-
-	if Logger == nil {
-		return errors.New("failed creating logger")
-	}
-	return nil
+// Config holds logger configuration
+type Config struct {
+	Level     slog.Level
+	Output    io.Writer // Default: os.Stdout
+	AddSource bool      // Include call site information
 }
 
-// Info attributes its logs with the INFO tag.
-func Info(msg string, args ...slog.Attr) {
-	if Logger == nil {
-		log.Printf("Logger not initialized: %s\n", msg)
-	}
+// Init initializes the global logger with safe defaults
+func Init(cfg Config) {
+	initOnce.Do(func() {
+		if cfg.Output == nil {
+			cfg.Output = os.Stdout
+		}
 
-	argSlice := make([]any, 0)
+		mu.Lock()
+		defer mu.Unlock()
 
-	for _, arg := range args {
-		argSlice = append(argSlice, arg.Key, arg.Value)
-	}
-	Logger.Info(msg, argSlice...)
+		instance = slog.New(slog.NewTextHandler(cfg.Output, &slog.HandlerOptions{
+			Level:     cfg.Level,
+			AddSource: cfg.AddSource,
+		}))
+	})
 }
 
-// Error attributes its logs with the ERROR tag.
-func Error(msg string, args ...slog.Attr) {
-	if Logger == nil {
-		log.Printf("Logger not initialized: %s\n", msg)
-	}
+// getLogger safely returns the logger instance
+func getLogger() *slog.Logger {
+	mu.RLock()
+	defer mu.RUnlock()
 
-	argSlice := make([]any, 0)
-
-	for _, arg := range args {
-		argSlice = append(argSlice, arg.Key, arg.Value)
+	if instance == nil {
+		panic("logger not initialized: call logger.Init() first")
 	}
-	Logger.Error(msg, argSlice...)
+	return instance
 }
 
-// Warn attributes its logs with the WARN tag.
-func Warn(msg string, args ...slog.Attr) {
-	if Logger == nil {
-		log.Printf("Logger not initialized: %s\n", msg)
+// Log methods with attribute processing
+func logAttrs(lvl slog.Level, msg string, attrs ...slog.Attr) {
+	var args []any
+	for _, attr := range attrs {
+		args = append(args, attr.Key, attr.Value)
 	}
-
-	argSlice := make([]any, 0)
-
-	for _, arg := range args {
-		argSlice = append(argSlice, arg.Key, arg.Value)
-	}
-	Logger.Warn(msg, argSlice...)
+	getLogger().Log(context.TODO(), lvl, msg, args...)
 }
 
-// Debug attributes its logs with the DEBUG tag.
-func Debug(msg string, args ...slog.Attr) {
-	if Logger == nil {
-		log.Printf("Logger not initialized: %s\n", msg)
-	}
+// Public API
+func Debug(msg string, attrs ...slog.Attr) {
+	logAttrs(slog.LevelDebug, msg, attrs...)
+}
 
-	argSlice := make([]any, 0)
+func Info(msg string, attrs ...slog.Attr) {
+	logAttrs(slog.LevelInfo, msg, attrs...)
+}
 
-	for _, arg := range args {
-		argSlice = append(argSlice, arg.Key, arg.Value)
-	}
-	Logger.Debug(msg, argSlice...)
+func Warn(msg string, attrs ...slog.Attr) {
+	logAttrs(slog.LevelWarn, msg, attrs...)
+}
+
+func Error(msg string, attrs ...slog.Attr) {
+	logAttrs(slog.LevelError, msg, attrs...)
 }
