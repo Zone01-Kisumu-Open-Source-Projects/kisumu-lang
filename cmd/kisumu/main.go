@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"log/slog"
 	"os"
 
@@ -9,14 +8,18 @@ import (
 )
 
 func main() {
-	_ = os.Mkdir("data", 0744)
+	// Initialize with debug level and source locations
+	logger.Init(logger.Config{
+		Level:     slog.LevelDebug,
+		AddSource: true,
+	})
 
-	// Default log level assumed to be info
-	level := slog.LevelInfo
-	err := logger.InitLogger("data/app.log", level)
-	if err != nil {
-		log.Fatalf("Failed to initialize logger: %v", err)
-	}
+	logger.Info("Starting Kisumu Lang",
+		slog.String("version", "0.4.0"),
+		slog.Int("pid", os.Getpid()),
+	)
 
-	logger.Info("Kisumu Lang CLI")
+	// Standard usage
+	logger.Debug("Debugging information")
+	logger.Warn("Potential issue detected")
 }
