@@ -40,7 +40,7 @@ func main() {
 	)
 
 	if *file != "" {
-		if err := repl.RunFile(*file); err != nil {
+		if err := repl.ReadFile(*file); err != nil {
 			logger.Error("File execution failed",
 				slog.String("path", *file),
 				slog.String("error", err.Error()),
