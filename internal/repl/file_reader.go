@@ -10,11 +10,11 @@ import (
 )
 
 // ReadFile reads a file and tokenizes its content.
-func ReadFile(filename string) {
+func ReadFile(filename string) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		fmt.Printf("Error opening file: %s\n", err)
-		return
+		return err
 	}
 	defer file.Close()
 
@@ -32,4 +32,5 @@ func ReadFile(filename string) {
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("Error reading file: %s\n", err)
 	}
+	return nil
 }
