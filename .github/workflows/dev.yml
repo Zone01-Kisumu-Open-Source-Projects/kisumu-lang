@@ -6,11 +6,13 @@ on:
       - alpha
       - "beta/*"
       - dev
+      - main
   push:
     branches:
       - alpha
       - "beta/*"
       - dev
+      - main
 
 jobs:
   build-and-test:

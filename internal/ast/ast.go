@@ -25,8 +25,8 @@ type BinaryExpression struct {
 
 // Intnode represents an integer literal in the syntax tree
 type IntNode struct {
-	Token token.Token //represents the integer(e.g, '42';)
-	Value int         //actual integer val an an int
+	Token token.Token // represents the integer(e.g, '42';)
+	Value int         // actual integer val an an int
 }
 
 // implements the Node interface
