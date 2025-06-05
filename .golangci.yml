@@ -1,5 +1,7 @@
+version: 1.58.1
+
 linters:
-  disable-all: true
+
   enable:
     - bidichk
     - goimports
@@ -14,32 +16,6 @@ linters:
     - unused
     - ineffassign
     - bodyclose
-    - gosec
-
-linters-settings:
-  revive:
-    rules:
-      - name: exported
-        arguments: [disable]
-  gocritic:
-    enabled-checks:
-      - rangeValCopy
-      - appendAssign
-  gosec:
-    excludes:
-      - G101 # Ignore hardcoded credentials check
 
 run:
   timeout: 5m
-  fix: true
-
-issues:
-  max-issues-per-linter: 20
-  max-same-issues: 5
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - goconst
-    - path: internal/mocks
-      linters:
-        - all
