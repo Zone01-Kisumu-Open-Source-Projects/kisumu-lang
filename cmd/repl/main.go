@@ -40,6 +40,7 @@ func main() {
 	)
 
 	if *file != "" {
+		defer cleanup()
 		if err := repl.ReadFile(*file); err != nil {
 			logger.Error("File execution failed",
 				slog.String("path", *file),
@@ -52,5 +53,15 @@ func main() {
 
 	logger.Warn("No input file provided - entering interactive mode")
 	// fmt.Println("Kisumu REPL (type :exit to quit)")
-	repl.Start()
+	if err := repl.Start(); err != nil {
+		logger.Error("Failed to start REPL",
+			slog.String("error", err.Error()),
+			slog.String("action", "exiting REPL"),
+		)
+		os.Exit(1)
+	}
+}
+
+func cleanup() {
+	logger.Info("Cleaning up after file execution")
 }
