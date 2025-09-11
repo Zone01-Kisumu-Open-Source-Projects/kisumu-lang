@@ -10,18 +10,21 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Zone01-Kisumu-Open-Source-Projects/kisumu-lang/internal/interpreter"
 	"github.com/Zone01-Kisumu-Open-Source-Projects/kisumu-lang/internal/lexer"
-	"github.com/Zone01-Kisumu-Open-Source-Projects/kisumu-lang/internal/token"
+	"github.com/Zone01-Kisumu-Open-Source-Projects/kisumu-lang/internal/parser"
 )
 
 const PROMPT = ">>> "
 
-// Start launches the REPL for lexer testing.
+// Start launches the REPL for language testing.
 func Start() error {
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("Welcome to the Kisumu Lang Lexer REPL!")
+	fmt.Println("Welcome to the Kisumu Lang REPL!")
 	fmt.Println("Type your code below. Type 'exit' to quit.")
 	fmt.Println("------------------------------------------")
+
+	interpreter := interpreter.New()
 
 	for {
 		fmt.Print(PROMPT)
@@ -40,15 +43,26 @@ func Start() error {
 			continue
 		}
 
+		// Lex the input
 		l := lexer.New(input, lexer.DefaultConfig)
-		fmt.Println("Tokens:")
-		fmt.Println("------------------------------------------")
+		p := parser.New(l)
 
-		// Print tokens until EOF
-		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
-			fmt.Printf("%+v\n", tok)
+		program := p.ParseProgram()
+
+		// Check for parsing errors
+		if len(p.Errors()) != 0 {
+			fmt.Println("Parser errors:")
+			for _, err := range p.Errors() {
+				fmt.Printf("  %s\n", err)
+			}
+			continue
 		}
-		fmt.Println("------------------------------------------")
+
+		// Evaluate the program
+		result := interpreter.Eval(program)
+		if result != nil {
+			fmt.Println(result.Inspect())
+		}
 	}
 	return nil
 }
