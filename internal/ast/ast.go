@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"strings"
+
 	"github.com/Zone01-Kisumu-Open-Source-Projects/kisumu-lang/internal/token"
 )
 
@@ -225,3 +227,173 @@ func (i *IntNode) String() string {
 
 // expressionNode implements the Expression interface
 func (i *IntNode) expressionNode() {}
+
+// IfExpression represents an if-else expression
+type IfExpression struct {
+	Token       token.Token
+	Condition   Expression
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+}
+
+func (ie *IfExpression) TokenLiteral() string {
+	return ie.Token.Literal
+}
+
+func (ie *IfExpression) String() string {
+	var out string
+	out += "if (" + ie.Condition.String() + ") " + ie.Consequence.String()
+	if ie.Alternative != nil {
+		out += " else " + ie.Alternative.String()
+	}
+	return out
+}
+
+func (ie *IfExpression) expressionNode() {}
+func (ie *IfExpression) statementNode()  {}
+
+// BlockStatement represents a block of statements
+type BlockStatement struct {
+	Token      token.Token
+	Statements []Statement
+}
+
+func (bs *BlockStatement) TokenLiteral() string {
+	return bs.Token.Literal
+}
+
+func (bs *BlockStatement) String() string {
+	var out string
+	for _, s := range bs.Statements {
+		out += s.String()
+	}
+	return out
+}
+
+func (bs *BlockStatement) statementNode() {}
+
+// WhileLoop represents a while loop
+type WhileLoop struct {
+	Token     token.Token
+	Condition Expression
+	Body      *BlockStatement
+}
+
+func (wl *WhileLoop) TokenLiteral() string {
+	return wl.Token.Literal
+}
+
+func (wl *WhileLoop) String() string {
+	return "while (" + wl.Condition.String() + ") " + wl.Body.String()
+}
+
+func (wl *WhileLoop) statementNode() {}
+
+// ForLoop represents a for loop
+type ForLoop struct {
+	Token       token.Token
+	Initializer Statement
+	Condition   Expression
+	Update      Statement
+	Body        *BlockStatement
+}
+
+func (fl *ForLoop) TokenLiteral() string {
+	return fl.Token.Literal
+}
+
+func (fl *ForLoop) String() string {
+	var out string
+	out += "for ("
+	if fl.Initializer != nil {
+		out += fl.Initializer.String()
+	}
+	out += "; "
+	if fl.Condition != nil {
+		out += fl.Condition.String()
+	}
+	out += "; "
+	if fl.Update != nil {
+		out += fl.Update.String()
+	}
+	out += ") " + fl.Body.String()
+	return out
+}
+
+func (fl *ForLoop) statementNode() {}
+
+// FunctionLiteral represents a function literal
+type FunctionLiteral struct {
+	Token      token.Token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (fl *FunctionLiteral) TokenLiteral() string {
+	return fl.Token.Literal
+}
+
+func (fl *FunctionLiteral) String() string {
+	var out string
+	params := []string{}
+	for _, p := range fl.Parameters {
+		params = append(params, p.String())
+	}
+	out += "func(" + strings.Join(params, ", ") + ") " + fl.Body.String()
+	return out
+}
+
+func (fl *FunctionLiteral) expressionNode() {}
+
+// CallExpression represents a function call
+type CallExpression struct {
+	Token     token.Token
+	Function  Expression
+	Arguments []Expression
+}
+
+func (ce *CallExpression) TokenLiteral() string {
+	return ce.Token.Literal
+}
+
+func (ce *CallExpression) String() string {
+	var out string
+	args := []string{}
+	for _, a := range ce.Arguments {
+		args = append(args, a.String())
+	}
+	out += ce.Function.String() + "(" + strings.Join(args, ", ") + ")"
+	return out
+}
+
+func (ce *CallExpression) expressionNode() {}
+
+// BreakStatement represents a break statement
+type BreakStatement struct {
+	Token token.Token
+}
+
+func (bs *BreakStatement) TokenLiteral() string {
+	return bs.Token.Literal
+}
+
+func (bs *BreakStatement) String() string {
+	return "break;"
+}
+
+func (bs *BreakStatement) statementNode() {}
+
+// ContinueStatement represents a continue statement
+type ContinueStatement struct {
+	Token token.Token
+}
+
+func (cs *ContinueStatement) TokenLiteral() string {
+	return cs.Token.Literal
+}
+
+func (cs *ContinueStatement) String() string {
+	return "continue;"
+}
+
+func (cs *ContinueStatement) statementNode() {}
