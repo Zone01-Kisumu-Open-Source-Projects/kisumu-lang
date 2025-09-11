@@ -17,7 +17,11 @@ func ReadFile(filename string) error {
 		fmt.Printf("Error opening file: %s\n", err)
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("Error closing file: %s\n", err)
+		}
+	}()
 
 	fmt.Printf("Reading from file: %s\n", filename)
 
