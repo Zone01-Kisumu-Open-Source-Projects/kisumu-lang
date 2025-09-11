@@ -167,6 +167,14 @@ func testIntegerObject(t *testing.T, obj Object, expected int64) bool {
 	return true
 }
 
+func testNullObject(t *testing.T, obj Object) bool {
+	if obj != NULL {
+		t.Errorf("object is not NULL. got=%T (%+v)", obj, obj)
+		return false
+	}
+	return true
+}
+
 func testBooleanObject(t *testing.T, obj Object, expected bool) bool {
 	result, ok := obj.(*Boolean)
 	if !ok {
