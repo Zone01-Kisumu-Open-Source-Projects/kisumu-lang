@@ -92,7 +92,7 @@ func (l *Lexer) skipWhiteSpace() {
 		if l.char == '/' && l.peekNextCharacter() == '*' {
 			l.readCurrentCharacter()
 			l.readCurrentCharacter()
-			for !(l.char == '*' && l.peekNextCharacter() == '/') && l.char != 0 {
+			for (l.char != '*' || l.peekNextCharacter() != '/') && l.char != 0 {
 				l.readCurrentCharacter()
 			}
 			if l.char == '*' {
