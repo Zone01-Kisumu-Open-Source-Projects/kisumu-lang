@@ -1,28 +1,38 @@
 package parser
 
 import (
+	"testing"
+
 	"github.com/Zone01-Kisumu-Open-Source-Projects/kisumu-lang/internal/ast"
 	"github.com/Zone01-Kisumu-Open-Source-Projects/kisumu-lang/internal/lexer"
-	"testing"
 )
 
 func TestParseIntNode(t *testing.T) {
 	input := "42"
-	lexer := lexer.New(input, lexer.DefaultConfig) // Ensure this is your Lexer
-	parser := New(lexer)                           // Update to match `New` for `Parser`
+	l := lexer.New(input, lexer.DefaultConfig)
+	p := New(l)
 
-	node := parser.parseIntLiteral()
+	program := p.ParseProgram()
 
-	if node == nil {
-		t.Fatalf("parseIntLiteral returned nil")
+	if len(p.Errors()) != 0 {
+		t.Fatalf("parser has %d errors", len(p.Errors()))
 	}
 
-	intNode, ok := node.(*ast.IntNode)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain 1 statements. got=%d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
-		t.Fatalf("expected *ast.IntNode, got %T", node)
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+
+	intNode, ok := stmt.Expression.(*ast.IntNode)
+	if !ok {
+		t.Fatalf("exp not *ast.IntNode. got=%T", stmt.Expression)
 	}
 
 	if intNode.Value != 42 {
-		t.Errorf("expected value 42, got %d", intNode.Value)
+		t.Errorf("intNode.Value not %d. got=%d", 42, intNode.Value)
 	}
 }
