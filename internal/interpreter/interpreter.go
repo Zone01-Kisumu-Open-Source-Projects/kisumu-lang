@@ -2,6 +2,7 @@ package interpreter
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Zone01-Kisumu-Open-Source-Projects/kisumu-lang/internal/ast"
 )
@@ -16,6 +17,9 @@ const (
 	STRING_OBJ       = "STRING"
 	ERROR_OBJ        = "ERROR"
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
+	FUNCTION_OBJ     = "FUNCTION"
+	BREAK_OBJ        = "BREAK"
+	CONTINUE_OBJ     = "CONTINUE"
 )
 
 // Object represents a value in the language
@@ -163,6 +167,32 @@ func (i *Interpreter) Eval(node ast.Node) Object {
 			return val
 		}
 		return &ReturnValue{Value: val}
+	case *ast.IfExpression:
+		return i.evalIfExpression(node)
+	case *ast.WhileLoop:
+		return i.evalWhileLoop(node)
+	case *ast.ForLoop:
+		return i.evalForLoop(node)
+	case *ast.BreakStatement:
+		return BREAK
+	case *ast.ContinueStatement:
+		return CONTINUE
+	case *ast.BlockStatement:
+		return i.evalBlockStatement(node)
+	case *ast.FunctionLiteral:
+		params := node.Parameters
+		body := node.Body
+		return &Function{Parameters: params, Body: body, Env: i.env}
+	case *ast.CallExpression:
+		function := i.Eval(node.Function)
+		if isError(function) {
+			return function
+		}
+		args := i.evalExpressions(node.Arguments)
+		if len(args) == 1 && isError(args[0]) {
+			return args[0]
+		}
+		return i.applyFunction(function, args)
 	}
 	return &Error{Message: fmt.Sprintf("unknown node type: %T", node)}
 }
@@ -324,9 +354,236 @@ func isError(obj Object) bool {
 	return false
 }
 
+// Function represents a function object
+type Function struct {
+	Parameters []*ast.Identifier
+	Body       *ast.BlockStatement
+	Env        *Environment
+}
+
+func (f *Function) Type() ObjectType { return FUNCTION_OBJ }
+func (f *Function) Inspect() string {
+	var out string
+	params := []string{}
+	for _, p := range f.Parameters {
+		params = append(params, p.String())
+	}
+	out += "func(" + strings.Join(params, ", ") + ") " + f.Body.String()
+	return out
+}
+
+// Break represents a break object
+type Break struct{}
+
+func (b *Break) Type() ObjectType { return BREAK_OBJ }
+func (b *Break) Inspect() string  { return "break" }
+
+// Continue represents a continue object
+type Continue struct{}
+
+func (c *Continue) Type() ObjectType { return CONTINUE_OBJ }
+func (c *Continue) Inspect() string  { return "continue" }
+
 // Predefined values
 var (
-	TRUE  = &Boolean{Value: true}
-	FALSE = &Boolean{Value: false}
-	NULL  = &Null{}
+	TRUE     = &Boolean{Value: true}
+	FALSE    = &Boolean{Value: false}
+	NULL     = &Null{}
+	BREAK    = &Break{}
+	CONTINUE = &Continue{}
 )
+
+// evalIfExpression evaluates an if expression
+func (i *Interpreter) evalIfExpression(ie *ast.IfExpression) Object {
+	condition := i.Eval(ie.Condition)
+	if isError(condition) {
+		return condition
+	}
+
+	if isTruthy(condition) {
+		return i.Eval(ie.Consequence)
+	} else if ie.Alternative != nil {
+		return i.Eval(ie.Alternative)
+	} else {
+		return NULL
+	}
+}
+
+// evalWhileLoop evaluates a while loop
+func (i *Interpreter) evalWhileLoop(wl *ast.WhileLoop) Object {
+	var result Object = NULL
+
+	for {
+		condition := i.Eval(wl.Condition)
+		if isError(condition) {
+			return condition
+		}
+
+		if !isTruthy(condition) {
+			break
+		}
+
+		result = i.Eval(wl.Body)
+		if isError(result) {
+			return result
+		}
+
+		// Handle break and continue
+		if result.Type() == BREAK_OBJ {
+			break
+		}
+		if result.Type() == CONTINUE_OBJ {
+			continue
+		}
+	}
+
+	return result
+}
+
+// evalForLoop evaluates a for loop
+func (i *Interpreter) evalForLoop(fl *ast.ForLoop) Object {
+	var result Object = NULL
+
+	// Execute initializer
+	if fl.Initializer != nil {
+		initResult := i.Eval(fl.Initializer)
+		if isError(initResult) {
+			return initResult
+		}
+	}
+
+	for {
+		// Check condition
+		if fl.Condition != nil {
+			condition := i.Eval(fl.Condition)
+			if isError(condition) {
+				return condition
+			}
+
+			if !isTruthy(condition) {
+				break
+			}
+		}
+
+		// Execute body
+		result = i.Eval(fl.Body)
+		if isError(result) {
+			return result
+		}
+
+		// Handle break and continue
+		if result.Type() == BREAK_OBJ {
+			break
+		}
+		if result.Type() == CONTINUE_OBJ {
+			// Execute update before continuing
+			if fl.Update != nil {
+				updateResult := i.Eval(fl.Update)
+				if isError(updateResult) {
+					return updateResult
+				}
+			}
+			continue
+		}
+
+		// Execute update
+		if fl.Update != nil {
+			updateResult := i.Eval(fl.Update)
+			if isError(updateResult) {
+				return updateResult
+			}
+		}
+	}
+
+	return result
+}
+
+// evalBlockStatement evaluates a block statement
+func (i *Interpreter) evalBlockStatement(block *ast.BlockStatement) Object {
+	var result Object = NULL
+
+	// Create new environment for block scope
+	env := NewEnclosedEnvironment(i.env)
+	oldEnv := i.env
+	i.env = env
+	defer func() { i.env = oldEnv }()
+
+	for _, statement := range block.Statements {
+		result = i.Eval(statement)
+		if isError(result) {
+			return result
+		}
+
+		// Handle return, break, continue
+		if result.Type() == RETURN_VALUE_OBJ || result.Type() == BREAK_OBJ || result.Type() == CONTINUE_OBJ {
+			return result
+		}
+	}
+
+	return result
+}
+
+// evalExpressions evaluates a list of expressions
+func (i *Interpreter) evalExpressions(exps []ast.Expression) []Object {
+	result := []Object{}
+
+	for _, e := range exps {
+		evaluated := i.Eval(e)
+		if isError(evaluated) {
+			return []Object{evaluated}
+		}
+		result = append(result, evaluated)
+	}
+
+	return result
+}
+
+// applyFunction applies a function to arguments
+func (i *Interpreter) applyFunction(fn Object, args []Object) Object {
+	function, ok := fn.(*Function)
+	if !ok {
+		return &Error{Message: "not a function: " + string(fn.Type())}
+	}
+
+	if len(function.Parameters) != len(args) {
+		return &Error{Message: fmt.Sprintf("wrong number of arguments. got=%d, want=%d", len(args), len(function.Parameters))}
+	}
+
+	// Create new environment for function scope
+	env := NewEnclosedEnvironment(function.Env)
+
+	// Bind parameters to arguments
+	for paramIdx, param := range function.Parameters {
+		env.Set(param.Value, args[paramIdx])
+	}
+
+	// Save old environment and set function environment
+	oldEnv := i.env
+	i.env = env
+	defer func() { i.env = oldEnv }()
+
+	// Evaluate function body
+	result := i.Eval(function.Body)
+	if isError(result) {
+		return result
+	}
+
+	// Handle return value
+	if result.Type() == RETURN_VALUE_OBJ {
+		return result.(*ReturnValue).Value
+	}
+
+	return result
+}
+
+// isTruthy determines if an object is truthy
+func isTruthy(obj Object) bool {
+	switch obj := obj.(type) {
+	case *Null:
+		return false
+	case *Boolean:
+		return obj.Value
+	default:
+		return true
+	}
+}
