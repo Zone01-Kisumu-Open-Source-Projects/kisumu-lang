@@ -46,7 +46,7 @@ func main() {
 				slog.String("error", err.Error()),
 			)
 			cleanup()
-			os.Exit(1)
+			panic("File execution failed")
 		}
 		cleanup()
 		return
@@ -59,7 +59,6 @@ func main() {
 			slog.String("error", err.Error()),
 			slog.String("action", "exiting REPL"),
 		)
-		// Use panic to trigger the defer recovery mechanism
 		panic("REPL startup failed")
 	}
 }
