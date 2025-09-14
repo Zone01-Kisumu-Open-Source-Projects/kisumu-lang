@@ -31,6 +31,7 @@ jobs:
           fetch-depth: 2
 
       - name: Debug environment
+        shell: bash
         run: |
           echo "Running on ${{ runner.os }}"
           echo "Job matrix:"
@@ -54,12 +55,14 @@ jobs:
             ${{ runner.os }}-go-${{ matrix.go-version }}-
 
       - name: Install tools
+        shell: bash
         run: |
           go install golang.org/x/tools/cmd/godoc@latest
           go install honnef.co/go/tools/cmd/staticcheck@latest
           go install github.com/securego/gosec/v2/cmd/gosec@latest
 
       - name: Format check
+        shell: bash
         run: |
           unformatted=$(gofmt -l .)
           if [ -n "$unformatted" ]; then
@@ -75,9 +78,11 @@ jobs:
           args: --timeout=5m --enable=gosec --enable=staticcheck
 
       - name: Build
+        shell: bash
         run: make build
 
       - name: Run tests
+        shell: bash
         run: |
           go test -v -coverprofile=coverage.out -covermode=atomic ./... | tee tests.log
           go tool cover -func=coverage.out
@@ -98,6 +103,7 @@ jobs:
 
       - name: Generate docs (non-Windows)
         if: matrix.platform != 'windows-latest'
+        shell: bash
         run: |
           godoc -http=:6060 &
           sleep 5
