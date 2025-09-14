@@ -269,10 +269,9 @@ func (p *Parser) expectPeek(t string) bool {
 	if p.peekTokenIs(t) {
 		p.nextToken()
 		return true
-	} else {
-		p.peekError(t)
-		return false
 	}
+	p.peekError(t)
+	return false
 }
 
 func (p *Parser) peekError(t string) {

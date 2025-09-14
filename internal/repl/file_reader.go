@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/Zone01-Kisumu-Open-Source-Projects/kisumu-lang/internal/interpreter"
 	"github.com/Zone01-Kisumu-Open-Source-Projects/kisumu-lang/internal/lexer"
@@ -12,7 +13,13 @@ import (
 
 // ReadFile reads a file and executes its content.
 func ReadFile(filename string) error {
-	file, err := os.Open(filename)
+	// Validate the file path to prevent directory traversal attacks
+	cleanPath := filepath.Clean(filename)
+	if cleanPath != filename {
+		return fmt.Errorf("invalid file path: %s", filename)
+	}
+
+	file, err := os.Open(cleanPath)
 	if err != nil {
 		fmt.Printf("Error opening file: %s\n", err)
 		return err

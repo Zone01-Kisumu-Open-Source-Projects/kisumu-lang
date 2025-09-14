@@ -11,15 +11,15 @@ import (
 type ObjectType string
 
 const (
-	INTEGER_OBJ      = "INTEGER"
-	BOOLEAN_OBJ      = "BOOLEAN"
-	NULL_OBJ         = "NULL"
-	STRING_OBJ       = "STRING"
-	ERROR_OBJ        = "ERROR"
-	RETURN_VALUE_OBJ = "RETURN_VALUE"
-	FUNCTION_OBJ     = "FUNCTION"
-	BREAK_OBJ        = "BREAK"
-	CONTINUE_OBJ     = "CONTINUE"
+	IntegerObj     = "INTEGER"
+	BooleanObj     = "BOOLEAN"
+	NullObj        = "NULL"
+	StringObj      = "STRING"
+	ErrorObj       = "ERROR"
+	ReturnValueObj = "RETURN_VALUE"
+	FunctionObj    = "FUNCTION"
+	BreakObj       = "BREAK"
+	ContinueObj    = "CONTINUE"
 )
 
 // Object represents a value in the language
@@ -33,7 +33,7 @@ type Integer struct {
 	Value int64
 }
 
-func (i *Integer) Type() ObjectType { return INTEGER_OBJ }
+func (i *Integer) Type() ObjectType { return IntegerObj }
 func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
 
 // Boolean represents a boolean value
@@ -41,13 +41,13 @@ type Boolean struct {
 	Value bool
 }
 
-func (b *Boolean) Type() ObjectType { return BOOLEAN_OBJ }
+func (b *Boolean) Type() ObjectType { return BooleanObj }
 func (b *Boolean) Inspect() string  { return fmt.Sprintf("%t", b.Value) }
 
 // Null represents a null value
 type Null struct{}
 
-func (n *Null) Type() ObjectType { return NULL_OBJ }
+func (n *Null) Type() ObjectType { return NullObj }
 func (n *Null) Inspect() string  { return "null" }
 
 // String represents a string value
@@ -55,7 +55,7 @@ type String struct {
 	Value string
 }
 
-func (s *String) Type() ObjectType { return STRING_OBJ }
+func (s *String) Type() ObjectType { return StringObj }
 func (s *String) Inspect() string  { return s.Value }
 
 // Error represents an error value
@@ -63,7 +63,7 @@ type Error struct {
 	Message string
 }
 
-func (e *Error) Type() ObjectType { return ERROR_OBJ }
+func (e *Error) Type() ObjectType { return ErrorObj }
 func (e *Error) Inspect() string  { return "ERROR: " + e.Message }
 
 // ReturnValue represents a return value
@@ -71,7 +71,7 @@ type ReturnValue struct {
 	Value Object
 }
 
-func (rv *ReturnValue) Type() ObjectType { return RETURN_VALUE_OBJ }
+func (rv *ReturnValue) Type() ObjectType { return ReturnValueObj }
 func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
 
 // Environment represents the variable environment
@@ -247,7 +247,7 @@ func (i *Interpreter) evalBangOperatorExpression(right Object) Object {
 }
 
 func (i *Interpreter) evalMinusPrefixOperatorExpression(right Object) Object {
-	if right.Type() != INTEGER_OBJ {
+	if right.Type() != IntegerObj {
 		return &Error{Message: "unknown operator: -" + string(right.Type())}
 	}
 
@@ -257,9 +257,9 @@ func (i *Interpreter) evalMinusPrefixOperatorExpression(right Object) Object {
 
 func (i *Interpreter) evalInfixExpression(operator string, left, right Object) Object {
 	switch {
-	case left.Type() == INTEGER_OBJ && right.Type() == INTEGER_OBJ:
+	case left.Type() == IntegerObj && right.Type() == IntegerObj:
 		return i.evalIntegerInfixExpression(operator, left, right)
-	case left.Type() == STRING_OBJ && right.Type() == STRING_OBJ:
+	case left.Type() == StringObj && right.Type() == StringObj:
 		return i.evalStringInfixExpression(operator, left, right)
 	case operator == "==":
 		return i.evalEqualityExpression(left, right)
@@ -316,15 +316,15 @@ func (i *Interpreter) evalStringInfixExpression(operator string, left, right Obj
 
 func (i *Interpreter) evalEqualityExpression(left, right Object) Object {
 	switch {
-	case left.Type() == INTEGER_OBJ && right.Type() == INTEGER_OBJ:
+	case left.Type() == IntegerObj && right.Type() == IntegerObj:
 		leftVal := left.(*Integer).Value
 		rightVal := right.(*Integer).Value
 		return &Boolean{Value: leftVal == rightVal}
-	case left.Type() == BOOLEAN_OBJ && right.Type() == BOOLEAN_OBJ:
+	case left.Type() == BooleanObj && right.Type() == BooleanObj:
 		leftVal := left.(*Boolean).Value
 		rightVal := right.(*Boolean).Value
 		return &Boolean{Value: leftVal == rightVal}
-	case left.Type() == STRING_OBJ && right.Type() == STRING_OBJ:
+	case left.Type() == StringObj && right.Type() == StringObj:
 		leftVal := left.(*String).Value
 		rightVal := right.(*String).Value
 		return &Boolean{Value: leftVal == rightVal}
@@ -341,7 +341,7 @@ func (i *Interpreter) evalEqualityExpression(left, right Object) Object {
 
 func (i *Interpreter) evalNotEqualExpression(left, right Object) Object {
 	equality := i.evalEqualityExpression(left, right)
-	if equality.Type() == ERROR_OBJ {
+	if equality.Type() == ErrorObj {
 		return equality
 	}
 	return &Boolean{Value: !equality.(*Boolean).Value}
@@ -349,7 +349,7 @@ func (i *Interpreter) evalNotEqualExpression(left, right Object) Object {
 
 func isError(obj Object) bool {
 	if obj != nil {
-		return obj.Type() == ERROR_OBJ
+		return obj.Type() == ErrorObj
 	}
 	return false
 }
@@ -361,7 +361,7 @@ type Function struct {
 	Env        *Environment
 }
 
-func (f *Function) Type() ObjectType { return FUNCTION_OBJ }
+func (f *Function) Type() ObjectType { return FunctionObj }
 func (f *Function) Inspect() string {
 	var out string
 	params := []string{}
@@ -375,13 +375,13 @@ func (f *Function) Inspect() string {
 // Break represents a break object
 type Break struct{}
 
-func (b *Break) Type() ObjectType { return BREAK_OBJ }
+func (b *Break) Type() ObjectType { return BreakObj }
 func (b *Break) Inspect() string  { return "break" }
 
 // Continue represents a continue object
 type Continue struct{}
 
-func (c *Continue) Type() ObjectType { return CONTINUE_OBJ }
+func (c *Continue) Type() ObjectType { return ContinueObj }
 func (c *Continue) Inspect() string  { return "continue" }
 
 // Predefined values
@@ -402,11 +402,11 @@ func (i *Interpreter) evalIfExpression(ie *ast.IfExpression) Object {
 
 	if isTruthy(condition) {
 		return i.Eval(ie.Consequence)
-	} else if ie.Alternative != nil {
-		return i.Eval(ie.Alternative)
-	} else {
-		return NULL
 	}
+	if ie.Alternative != nil {
+		return i.Eval(ie.Alternative)
+	}
+	return NULL
 }
 
 // evalWhileLoop evaluates a while loop
@@ -429,10 +429,10 @@ func (i *Interpreter) evalWhileLoop(wl *ast.WhileLoop) Object {
 		}
 
 		// Handle break and continue
-		if result.Type() == BREAK_OBJ {
+		if result.Type() == BreakObj {
 			break
 		}
-		if result.Type() == CONTINUE_OBJ {
+		if result.Type() == ContinueObj {
 			continue
 		}
 	}
@@ -472,10 +472,10 @@ func (i *Interpreter) evalForLoop(fl *ast.ForLoop) Object {
 		}
 
 		// Handle break and continue
-		if result.Type() == BREAK_OBJ {
+		if result.Type() == BreakObj {
 			break
 		}
-		if result.Type() == CONTINUE_OBJ {
+		if result.Type() == ContinueObj {
 			// Execute update before continuing
 			if fl.Update != nil {
 				updateResult := i.Eval(fl.Update)
@@ -515,7 +515,7 @@ func (i *Interpreter) evalBlockStatement(block *ast.BlockStatement) Object {
 		}
 
 		// Handle return, break, continue
-		if result.Type() == RETURN_VALUE_OBJ || result.Type() == BREAK_OBJ || result.Type() == CONTINUE_OBJ {
+		if result.Type() == ReturnValueObj || result.Type() == BreakObj || result.Type() == ContinueObj {
 			return result
 		}
 	}
@@ -569,7 +569,7 @@ func (i *Interpreter) applyFunction(fn Object, args []Object) Object {
 	}
 
 	// Handle return value
-	if result.Type() == RETURN_VALUE_OBJ {
+	if result.Type() == ReturnValueObj {
 		return result.(*ReturnValue).Value
 	}
 

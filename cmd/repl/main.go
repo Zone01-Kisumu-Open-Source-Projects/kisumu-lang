@@ -40,14 +40,15 @@ func main() {
 	)
 
 	if *file != "" {
-		defer cleanup()
 		if err := repl.ReadFile(*file); err != nil {
 			logger.Error("File execution failed",
 				slog.String("path", *file),
 				slog.String("error", err.Error()),
 			)
+			cleanup()
 			os.Exit(1)
 		}
+		cleanup()
 		return
 	}
 
