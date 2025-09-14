@@ -59,7 +59,8 @@ func main() {
 			slog.String("error", err.Error()),
 			slog.String("action", "exiting REPL"),
 		)
-		os.Exit(1)
+		// Use panic to trigger the defer recovery mechanism
+		panic("REPL startup failed")
 	}
 }
 
