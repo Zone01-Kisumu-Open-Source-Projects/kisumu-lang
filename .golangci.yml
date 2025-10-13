@@ -1,7 +1,4 @@
-version: 1.58.1
-
 linters:
-
   enable:
     - bidichk
     - goimports

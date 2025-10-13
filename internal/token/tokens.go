@@ -59,6 +59,10 @@ const (
 	FALSE    = "FALSE"
 	IF       = "IF"
 	ELSE     = "ELSE"
+	WHILE    = "WHILE"
+	FOR      = "FOR"
+	BREAK    = "BREAK"
+	CONTINUE = "CONTINUE"
 	RETURN   = "RETURN"
 	CONST    = "CONST"
 	TYPE     = "TYPE"
@@ -66,16 +70,20 @@ const (
 
 // Map keywords in the language to their respective token types.
 var keywords = map[string]string{
-	"func":   FUNCTION,
-	"const":  CONST,
-	"int":    TYPE,
-	"string": TYPE,
-	"bool":   TYPE,
-	"true":   TRUE,
-	"false":  FALSE,
-	"if":     IF,
-	"else":   ELSE,
-	"return": RETURN,
+	"func":     FUNCTION,
+	"const":    CONST,
+	"int":      TYPE,
+	"string":   TYPE,
+	"bool":     TYPE,
+	"true":     TRUE,
+	"false":    FALSE,
+	"if":       IF,
+	"else":     ELSE,
+	"while":    WHILE,
+	"for":      FOR,
+	"break":    BREAK,
+	"continue": CONTINUE,
+	"return":   RETURN,
 }
 
 // Check if a given identifier is a keyword and return the corresponding type. Returns the IDENTIFIER type if not a keyword.

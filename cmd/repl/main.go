@@ -40,14 +40,15 @@ func main() {
 	)
 
 	if *file != "" {
-		defer cleanup()
 		if err := repl.ReadFile(*file); err != nil {
 			logger.Error("File execution failed",
 				slog.String("path", *file),
 				slog.String("error", err.Error()),
 			)
-			os.Exit(1)
+			cleanup()
+			panic("File execution failed")
 		}
+		cleanup()
 		return
 	}
 
@@ -58,7 +59,7 @@ func main() {
 			slog.String("error", err.Error()),
 			slog.String("action", "exiting REPL"),
 		)
-		os.Exit(1)
+		panic("REPL startup failed")
 	}
 }
 

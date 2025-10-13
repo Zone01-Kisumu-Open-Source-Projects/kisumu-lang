@@ -1,0 +1,19 @@
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Force Go files to use LF line endings
+*.go text eol=lf
+
+# Force shell scripts to use LF line endings
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Force YAML files to use LF line endings
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Force Markdown files to use LF line endings
+*.md text eol=lf
+
+# Force JSON files to use LF line endings
+*.json text eol=lf

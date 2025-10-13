@@ -92,7 +92,7 @@ func (l *Lexer) skipWhiteSpace() {
 		if l.char == '/' && l.peekNextCharacter() == '*' {
 			l.readCurrentCharacter()
 			l.readCurrentCharacter()
-			for !(l.char == '*' && l.peekNextCharacter() == '/') && l.char != 0 {
+			for (l.char != '*' || l.peekNextCharacter() != '/') && l.char != 0 {
 				l.readCurrentCharacter()
 			}
 			if l.char == '*' {
@@ -119,6 +119,30 @@ func (l *Lexer) readIdentifier() string {
 func (l *Lexer) readNumber() (string, string) {
 	start := l.position
 	var tokenType string
+
+	// Check for hexadecimal (0x prefix)
+	if l.char == '0' && l.peekNextCharacter() == 'x' {
+		l.readCurrentCharacter() // consume '0'
+		l.readCurrentCharacter() // consume 'x'
+
+		for isHexDigit(l.char) {
+			l.readCurrentCharacter()
+		}
+		tokenType = token.INT
+		return l.input[start:l.position], tokenType
+	}
+
+	// Check for binary (0b prefix)
+	if l.char == '0' && l.peekNextCharacter() == 'b' {
+		l.readCurrentCharacter() // consume '0'
+		l.readCurrentCharacter() // consume 'b'
+
+		for isBinaryDigit(l.char) {
+			l.readCurrentCharacter()
+		}
+		tokenType = token.INT
+		return l.input[start:l.position], tokenType
+	}
 
 	for isDigit(l.char) {
 		l.readCurrentCharacter()
@@ -256,6 +280,14 @@ func isLetter(char byte) bool {
 
 func isDigit(char byte) bool {
 	return '0' <= char && char <= '9'
+}
+
+func isHexDigit(char byte) bool {
+	return isDigit(char) || ('a' <= char && char <= 'f') || ('A' <= char && char <= 'F')
+}
+
+func isBinaryDigit(char byte) bool {
+	return char == '0' || char == '1'
 }
 
 func contains(slice []byte, item byte) bool {
