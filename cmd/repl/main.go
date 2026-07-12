@@ -9,7 +9,13 @@ import (
 	"github.com/Zone01-Kisumu-Open-Source-Projects/kisumu-lang/pkg/logger"
 )
 
+var file = flag.String("file", "", "Source file to execute")
+
 func main() {
+	if !flag.Parsed() {
+		flag.Parse()
+	}
+
 	// Initialize logger with debug level in dev, info in production
 	logLevel := slog.LevelInfo
 	if os.Getenv("KSM_DEBUG") != "" {
@@ -25,14 +31,11 @@ func main() {
 		if r := recover(); r != nil {
 			logger.Error("REPL panic recovered",
 				slog.Any("error", r),
-				slog.String("action", "restarting REPL"),
+				slog.String("action", "exiting REPL"),
 			)
-			main() // Restart on panic
+			os.Exit(1)
 		}
 	}()
-
-	file := flag.String("file", "", "Source file to execute")
-	flag.Parse()
 
 	logger.Info("Starting Kisumu REPL",
 		slog.String("version", "0.4.0"),
@@ -46,7 +49,7 @@ func main() {
 				slog.String("error", err.Error()),
 			)
 			cleanup()
-			panic("File execution failed")
+			os.Exit(1)
 		}
 		cleanup()
 		return
@@ -54,12 +57,28 @@ func main() {
 
 	logger.Warn("No input file provided - entering interactive mode")
 	// fmt.Println("Kisumu REPL (type :exit to quit)")
+	
+	// Run REPL with panic recovery for interactive mode
+	runInteractiveREPL()
+}
+
+func runInteractiveREPL() {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("REPL panic recovered",
+				slog.Any("error", r),
+				slog.String("action", "restarting REPL"),
+			)
+			runInteractiveREPL() // Restart on panic
+		}
+	}()
+
 	if err := repl.Start(); err != nil {
 		logger.Error("Failed to start REPL",
 			slog.String("error", err.Error()),
 			slog.String("action", "exiting REPL"),
 		)
-		panic("REPL startup failed")
+		os.Exit(1)
 	}
 }
 
