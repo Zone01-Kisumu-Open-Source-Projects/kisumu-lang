@@ -9,6 +9,9 @@ import (
 	"github.com/Zone01-Kisumu-Open-Source-Projects/kisumu-lang/pkg/logger"
 )
 
+// Declared only once so that flag.String is called once
+var file = flag.String("file", "", "path to source file")
+
 func main() {
 	// Initialize logger with debug level in dev, info in production
 	logLevel := slog.LevelInfo
@@ -21,17 +24,6 @@ func main() {
 		AddSource: true,
 	})
 
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Error("REPL panic recovered",
-				slog.Any("error", r),
-				slog.String("action", "restarting REPL"),
-			)
-			main() // Restart on panic
-		}
-	}()
-
-	file := flag.String("file", "", "Source file to execute")
 	flag.Parse()
 
 	logger.Info("Starting Kisumu REPL",
@@ -46,7 +38,7 @@ func main() {
 				slog.String("error", err.Error()),
 			)
 			cleanup()
-			panic("File execution failed")
+			os.Exit(1)
 		}
 		cleanup()
 		return
